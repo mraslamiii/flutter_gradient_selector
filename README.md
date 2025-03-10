@@ -15,4 +15,4 @@ Flutter Gradient Selector allow user to create gradient on the fly
 
 Have a look at exemple folder
 
-<a href="https://my-numeric.com">Powered by My-Numeric.com</a>
+<a href="https:/instagram.com/mr.aslamiii">Powered by Hamidreza aslami</a>
