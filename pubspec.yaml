@@ -1,0 +1,37 @@
+name: flutter_gradient_selector
+description: Gradient selector project. Allow easily users to select gradient or color in your flutter applications
+version: 1.0.9
+repository: https://github.com/mynumeric-mobile/flutter_gradient_selector
+
+# This package supports all platforms listed below.
+platforms:
+  android:
+  ios:
+  web:
+
+environment:
+  sdk: '>=3.0.6 <4.0.0'
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+    
+  flutter_hsvcolor_picker: ^1.5.0
+  shared_preferences: ^2.0.15
+  scrollable_positioned_list: ^0.3.8
+
+  path: ^1.8.3
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
