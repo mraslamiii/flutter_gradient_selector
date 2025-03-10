@@ -1,7 +1,7 @@
 Flutter Gradient Selector allow user to create gradient on the fly
 
 <table border="0"><tr><td><div align="center">
-  <img height=500 src="https://github.com/mynumeric-mobile/flutter_gradient_selector/assets/60822263/f472c14a-5859-4398-b154-0fbd5e0834bc" />
+  <img height=500 src="[https://github.com/mynumeric-mobile/flutter_gradient_selector/assets/60822263/f472c14a-5859-4398-b154-0fbd5e0834bc](https://github.com/user-attachments/assets/0dd320a0-1d6e-4a2d-afe8-0c809cfa99f2)" />
 </div></td><td><h2>Features</h2>
 
 
