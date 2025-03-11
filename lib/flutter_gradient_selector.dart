@@ -117,7 +117,8 @@ class _GradientSelectorState extends State<GradientSelector>
           GradientProperties.getType(gradient).specifications()!;
       return Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.only(
+              topRight: Radius.circular(8), topLeft: Radius.circular(8)),
           color: Colors.grey.shade900,
         ),
         padding: const EdgeInsets.only(top: 16),
@@ -193,7 +194,7 @@ class _GradientSelectorState extends State<GradientSelector>
                               onTap: () {
                                 _addSavedGradient(gradient);
                                 scrollController.scrollTo(
-                                    index: savedGradients.length ,
+                                    index: savedGradients.length,
                                     curve: Curves.easeIn,
                                     duration: Duration(milliseconds: 300));
                               },
