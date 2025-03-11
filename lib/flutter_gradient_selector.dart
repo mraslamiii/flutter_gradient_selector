@@ -13,6 +13,14 @@ List<Color> colorHistory = [];
 ///
 /// GradientSelector widget
 ///
+///
+///
+final List<Gradient> defaultGradients = [
+  LinearGradient(colors: [Colors.pinkAccent, Colors.pink]),
+  LinearGradient(colors: [Colors.pink, Colors.redAccent]),
+];
+final int defaultGradientsCount = 2;
+
 class GradientSelector extends StatefulWidget {
   const GradientSelector({
     super.key,
@@ -50,6 +58,7 @@ class _GradientSelectorState extends State<GradientSelector>
   GlobalKey _linearKey = GlobalKey();
   GlobalKey _sweepKey = GlobalKey();
 
+  int _selectedSavedIndex = -1;
   List<Gradient> savedGradients = [];
 
   @override
@@ -73,184 +82,209 @@ class _GradientSelectorState extends State<GradientSelector>
     _loadSavedGradients();
   }
 
+  /// Loads the saved gradients from SharedPreferences
   Future<void> _loadSavedGradients() async {
     final prefs = await SharedPreferences.getInstance();
     final List<String>? savedJsonList = prefs.getStringList("saved_gradients");
     if (savedJsonList != null) {
       setState(() {
         savedGradients = savedJsonList.map((jsonStr) {
-          Map<String, dynamic> jsonMap = jsonDecode(jsonStr);
+          final Map<String, dynamic> jsonMap = jsonDecode(jsonStr);
           return GradientProperties.deserialize(jsonMap) as Gradient;
         }).toList();
       });
     }
   }
 
+  /// Adds a new gradient to savedGradients and saves them in SharedPreferences
   Future<void> _addSavedGradient(Gradient g) async {
     final prefs = await SharedPreferences.getInstance();
     final List<String> savedJsonList =
         prefs.getStringList("saved_gradients") ?? [];
+
     final jsonStr = jsonEncode(GradientProperties.fromGradient(g).serialize());
     savedJsonList.add(jsonStr);
+
     await prefs.setStringList("saved_gradients", savedJsonList);
-    _loadSavedGradients();
+    await _loadSavedGradients();
   }
 
-  Future<void> _removeSavedGradient(int index) async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> savedJsonList =
-        prefs.getStringList("saved_gradients") ?? [];
-    if (index >= 0 && index < savedJsonList.length) {
-      savedJsonList.removeAt(index);
+  /// Removes a gradient from savedGradients, ignoring default ones
+  Future<void> _removeSavedGradient(int indexInBase) async {
+    // indexInBase = index - 1 (since index=0 is Add button)
+    // If indexInBase < defaultGradientsCount => it's a default gradient => skip
+    if (indexInBase < defaultGradientsCount) {
+      // do nothing
+      return;
+    }
+
+    // Otherwise, remove from savedGradients
+    final actualSavedIndex = indexInBase - defaultGradientsCount;
+    if (actualSavedIndex >= 0 && actualSavedIndex < savedGradients.length) {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> savedJsonList =
+          prefs.getStringList("saved_gradients") ?? [];
+
+      // Remove that item from savedJsonList
+      savedJsonList.removeAt(actualSavedIndex);
+
       await prefs.setStringList("saved_gradients", savedJsonList);
-      _loadSavedGradients();
+      await _loadSavedGradients();
     }
   }
-
-  int _selectedSavedIndex = -1;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-      GradientSpecification specif =
-          GradientProperties.getType(gradient).specifications()!;
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.only(
-              topRight: Radius.circular(8), topLeft: Radius.circular(8)),
-          color: Colors.grey.shade900,
-        ),
-        padding: const EdgeInsets.only(top: 16),
-        child: Column(
-          children: [
-            solidColorMode
-                ? SolidColorPicker(
-                    color: color,
-                    colorHistory: widget.history,
-                    onChange: (value) {
-                      color = value;
-                      setState(() {});
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final specif = GradientProperties.getType(gradient).specifications()!;
+
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(8),
+              topLeft: Radius.circular(8),
+            ),
+            color: Colors.grey.shade900,
+          ),
+          padding: const EdgeInsets.only(top: 16),
+          child: Column(
+            children: [
+              solidColorMode
+                  ? SolidColorPicker(
+                      color: color,
+                      colorHistory: widget.history,
+                      onChange: (value) {
+                        color = value;
+                        setState(() {});
+                      },
+                    )
+                  : gradientWidget(specif, constraints),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      widget.onConfirm?.call(gradient);
+                      Navigator.pop(context);
                     },
-                  )
-                : gradientWidget(specif, constraints),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    widget.onConfirm?.call(gradient);
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    'Confirm',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    child: const Text(
+                      'Confirm',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            if (true)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: const Text(
-                        "Saved Gradients",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 40,
-                      child: ScrollablePositionedList.builder(
-                        itemScrollController: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: (savedGradients.isEmpty
-                                    ? [
-                                        LinearGradient(colors: [
-                                          Colors.red,
-                                          Colors.orange
-                                        ]),
-                                        LinearGradient(
-                                            colors: [Colors.blue, Colors.green])
-                                      ]
-                                    : savedGradients)
-                                .length +
-                            1,
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return GestureDetector(
-                              onTap: () {
-                                _addSavedGradient(gradient);
-                                scrollController.scrollTo(
-                                    index: savedGradients.length,
-                                    curve: Curves.easeIn,
-                                    duration: Duration(milliseconds: 300));
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.all(4),
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.grey.shade800),
-                                child: const Icon(Icons.add,
-                                    color: Colors.grey, size: 24),
-                              ),
-                            );
-                          }
-                          final List<Gradient> displayGradients =
-                              savedGradients.isEmpty
-                                  ? [
-                                      LinearGradient(
-                                          colors: [Colors.red, Colors.orange]),
-                                      LinearGradient(
-                                          colors: [Colors.blue, Colors.green])
-                                    ]
-                                  : savedGradients;
-                          final g = displayGradients[index - 1];
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedSavedIndex = index - 1;
-                                gradient = g;
-                                properties = GradientProperties.fromGradient(g);
-                              });
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.all(4),
-                              width: 45,
-                              height: 45,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: g,
-                                border: (_selectedSavedIndex == index - 1)
-                                    ? Border.all(color: Colors.white, width: 3)
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 16),
+              buildSavedGradientsSection(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Builds the section that shows default gradients + saved gradients
+  Widget buildSavedGradientsSection() {
+    // Always have two default gradients at the start
+    final baseGradients = [
+      ...defaultGradients,
+      ...savedGradients,
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              "Saved Gradients",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
-          ],
-        ),
-      );
-    });
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 40,
+            child: ScrollablePositionedList.builder(
+              itemScrollController: scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              // +1 for the Add button at index=0
+              itemCount: baseGradients.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  // The "Add" button
+                  return GestureDetector(
+                    onTap: () async {
+                      try {
+                        await _addSavedGradient(gradient);
+                        // scroll to the newly added item => baseGradients.length - 1 => last item
+                        // But since we have +1 for Add button, the last item index = baseGradients.length
+                        scrollController.scrollTo(
+                          index: baseGradients.length,
+                          curve: Curves.easeIn,
+                          duration: const Duration(milliseconds: 300),
+                        );
+                      } catch (e) {
+                        rethrow;
+                      }
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.all(4),
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle, color: Colors.grey.shade800),
+                      child:
+                          const Icon(Icons.add, color: Colors.grey, size: 24),
+                    ),
+                  );
+                }
+
+                // Now, for index >= 1, we show the gradient at baseGradients[index-1]
+                final g = baseGradients[index - 1];
+                final isSelected = (_selectedSavedIndex == index - 1);
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedSavedIndex = index - 1;
+                      gradient = g;
+                      properties = GradientProperties.fromGradient(g);
+                    });
+                  },
+                  onLongPress: () async {
+                    // Attempt to remove if it's a saved gradient (not default)
+                    await _removeSavedGradient(index - 1);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.all(4),
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: g,
+                      border: isSelected
+                          ? Border.all(color: Colors.white, width: 3)
+                          : null,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget gradientWidget(
