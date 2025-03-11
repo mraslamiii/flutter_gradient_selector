@@ -695,8 +695,8 @@ class GradientProperties {
   Map<String, dynamic> serialize() {
     return {
       "type": typeIndex,
-      "begin": contract(begin),
-      "end": contract(end),
+      "begin": alignmentToString(begin),
+      "end": alignmentToString(end),
       "radius": radius,
       "colors": colors.map((c) => c.colorToString()).toList(),
       "stops": stops,
@@ -716,8 +716,8 @@ class GradientProperties {
       stops.add(v.toDouble());
     }
     var prop = GradientProperties(
-      begin: getAlignment(s["begin"]),
-      end: getAlignment(s["end"]),
+      begin: stringToAlignment(s["begin"]),
+      end: stringToAlignment(s["end"]),
       radius: s["radius"].toDouble(),
       colors: colors,
       stops: stops,
@@ -725,7 +725,24 @@ class GradientProperties {
     return type.get(prop);
   }
 
-  static getAlignment(value) {
+
+
+  static String alignmentToString(AlignmentGeometry align) {
+    if (align == Alignment.bottomCenter) return "bottomCenter";
+    if (align == Alignment.bottomLeft) return "bottomLeft";
+    if (align == Alignment.bottomRight) return "bottomRight";
+    if (align == Alignment.center) return "center";
+    if (align == Alignment.centerLeft) return "centerLeft";
+    if (align == Alignment.centerRight) return "centerRight";
+    if (align == Alignment.topCenter) return "topCenter";
+    if (align == Alignment.topLeft) return "topLeft";
+    if (align == Alignment.topRight) return "topRight";
+
+    // If none matched, fall back to center or store a numeric representation
+    // e.g. "custom(-1.0, 0.2)" if you want to handle arbitrary alignments.
+    return "center";
+  }
+  static AlignmentGeometry stringToAlignment(String value) {
     switch (value) {
       case "bottomCenter":
         return Alignment.bottomCenter;
@@ -745,7 +762,10 @@ class GradientProperties {
         return Alignment.topLeft;
       case "topRight":
         return Alignment.topRight;
+      default:
+        return Alignment.center;
     }
+
   }
 }
 
@@ -753,4 +773,7 @@ extension ColorExtension on Color {
   String colorToString() {
     return value.toRadixString(16).padLeft(8, '0');
   }
+
+
+
 }
